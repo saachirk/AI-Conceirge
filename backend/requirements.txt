@@ -1,3 +1,7 @@
+google-generativeai
+yfinance
+matplotlib
+pandas
+python-dotenv
 flask
 flask-cors
-groq

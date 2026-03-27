@@ -12,19 +12,34 @@ const SUGGESTED = [
 
 const ChatPage = () => {
   const location = useLocation();
-  const userProfile = location.state || {};
 
+  // 🧠 Dynamic profile
+  const [userProfile, setUserProfile] = useState(location.state || {});
+
+  // 💬 Chat messages
   const [messages, setMessages] = useState([
-    { text: "Hello! I'm your ET AI Navigator. I'm here to help you discover the full ET ecosystem — from markets and premium content to wealth management and events. What can I help you with today?", sender: "bot" }
+    {
+      type: "text",
+      text: "Hello! I'm your ET AI Navigator. What can I help you with today?",
+      sender: "bot"
+    }
   ]);
+
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [recommendations, setRecommendations] = useState([]);
 
   const sendMessage = async (text) => {
     const msgText = text || input;
     if (!msgText.trim()) return;
 
-    const userMsg = { text: msgText, sender: "user" };
+    // 👤 Add user message
+    const userMsg = {
+      type: "text",
+      text: msgText,
+      sender: "user"
+    };
+
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setTyping(true);
@@ -34,17 +49,47 @@ const ChatPage = () => {
         message: msgText,
         user_profile: userProfile
       });
-      const botReply = res.data.reply;
-      setMessages((prev) => [
-        ...prev,
-        { text: botReply, sender: "bot" }
-      ]);
+
+      const reply = res.data.reply;
+      const type = res.data.type || "text";
+
+      // 🤖 Handle AI response (text OR image)
+      const botMsg =
+        type === "image"
+          ? {
+              type: "image",
+              data: reply,
+              sender: "bot"
+            }
+          : {
+              type: "text",
+              text: reply,
+              sender: "bot"
+            };
+
+      setMessages((prev) => [...prev, botMsg]);
+
+      // 🧠 Update profile
+      if (res.data.user_profile) {
+        setUserProfile(res.data.user_profile);
+      }
+
+      // 🎯 Update recommendations
+      if (res.data.recommendations) {
+        setRecommendations(res.data.recommendations);
+      }
+
     } catch (error) {
       setMessages((prev) => [
         ...prev,
-        { text: "Error connecting to AI", sender: "bot" }
+        {
+          type: "text",
+          text: "⚠️ Error connecting to AI",
+          sender: "bot"
+        }
       ]);
     }
+
     setTyping(false);
   };
 
@@ -74,17 +119,36 @@ const ChatPage = () => {
         ))}
       </div>
 
-      {/* MESSAGES */}
+      {/* CHAT BODY */}
       <div className="chat-body">
         <div className="date-divider">Today</div>
+
         {messages.map((msg, i) => (
           <div key={i} className={`message ${msg.sender}`}>
-            {msg.text}
+
+            {/* 🔥 TEXT MESSAGE */}
+            {msg.type === "text" && <div>{msg.text}</div>}
+
+            {/* 🎨 IMAGE MESSAGE */}
+            {msg.type === "image" && (
+              <img
+                src={`data:image/png;base64,${msg.data}`}
+                alt="AI Generated"
+                style={{
+                  maxWidth: "260px",
+                  borderRadius: "12px",
+                  marginTop: "5px"
+                }}
+              />
+            )}
+
             <div className="message-meta">
               {msg.sender === "bot" ? "ET AI" : "You"} · just now
             </div>
           </div>
         ))}
+
+        {/* ⏳ Typing animation */}
         {typing && (
           <div className="typing">
             <div className="typing-dot" />
@@ -93,6 +157,8 @@ const ChatPage = () => {
           </div>
         )}
       </div>
+
+      
 
       {/* INPUT */}
       <div className="chat-input">
