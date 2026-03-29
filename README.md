@@ -20,30 +20,39 @@ It transforms ET into a **personal financial companion**
 
 **1. Clone the repository :**
 git clone https://github.com/saachirk/AI-Conceirge.git
+
 cd AI-Conceirge
 
 **2. Backend Setup (Flask):**
 cd backend
-**create virtual environment:*
+*create virtual environment:*
+
 python -m venv venv
-**activate it:*
+*activate it:*
+
 **Windows** : venv\Scripts\activate
+
 **Mac/Linux** : source venv/bin/activate
-**install dependencies* : pip install -r requirements.txt
+
+*install dependencies* : pip install -r requirements.txt
 
 **3. Environment Variables:**
 create an env file with api key :
 GROQ_API_KEY=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  (already present in the folder)
 
 **4. Run Backend Server:**
+
 python app.py
 
 Server will start at:
 http://127.0.0.1:8000
 
 **5. Frontend Setup:**
+
 cd ../frontend
+
 npm install
+
 npm run dev
 
 Frontend runs at:
