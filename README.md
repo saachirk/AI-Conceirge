@@ -27,13 +27,13 @@ cd backend
 **create virtual environment:*
 python -m venv venv
 **activate it:*
-**Windows* : venv\Scripts\activate
-**Mac/Linux* : source venv/bin/activate
+**Windows** : venv\Scripts\activate
+**Mac/Linux** : source venv/bin/activate
 **install dependencies* : pip install -r requirements.txt
 
 **3. Environment Variables:**
 create an env file with api key :
-GROQ_API_KEY=your_api_key_here
+GROQ_API_KEY=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  (already present in the folder)
 
 **4. Run Backend Server:**
 python app.py
