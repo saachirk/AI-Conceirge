@@ -1,7 +1,7 @@
 import os
 import base64
 import io
-import time
+import random
 from dotenv import load_dotenv
 from groq import Groq
 import yfinance as yf
@@ -25,7 +25,7 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 def detect_mode(message):
     msg = message.lower()
 
-    if any(word in msg for word in ["graph", "chart", "plot", "visual"]):
+    if any(word in msg for word in ["graph", "chart", "plot", "visual", "trend", "growth"]):
         return "graph"
 
     return "text"
@@ -46,6 +46,24 @@ def detect_graph_type(message):
 
 
 # -----------------------------
+# 🔹 GRAPH CATEGORY (IMPORTANT)
+# -----------------------------
+def detect_graph_category(message):
+    msg = message.lower()
+
+    stock_keywords = ["stock", "share", "price", "market"]
+    economy_keywords = ["gdp", "inflation", "revenue", "profit", "growth"]
+
+    if any(word in msg for word in stock_keywords):
+        return "stock"
+
+    if any(word in msg for word in economy_keywords):
+        return "general"
+
+    return "general"
+
+
+# -----------------------------
 # 🔹 STOCK MAP
 # -----------------------------
 STOCK_MAP = {
@@ -61,7 +79,7 @@ STOCK_MAP = {
 
 
 # -----------------------------
-# 🔹 EXTRACT TICKER (NO AI NEEDED)
+# 🔹 EXTRACT TICKER
 # -----------------------------
 def extract_stock_ticker(message):
     msg = message.lower()
@@ -74,7 +92,7 @@ def extract_stock_ticker(message):
 
 
 # -----------------------------
-# 🔹 GRAPH GENERATION
+# 🔹 STOCK GRAPH
 # -----------------------------
 def generate_stock_graph(ticker, graph_type="line"):
     try:
@@ -84,7 +102,7 @@ def generate_stock_graph(ticker, graph_type="line"):
                 "data": "⚠️ Please specify a stock (e.g., Apple, Tesla)"
             }
 
-        data = yf.download(ticker, period="6y")
+        data = yf.download(ticker, period="6mo")
 
         if hasattr(data.columns, "levels"):
             data.columns = data.columns.get_level_values(0)
@@ -105,7 +123,6 @@ def generate_stock_graph(ticker, graph_type="line"):
 
         elif graph_type == "bar":
             sample = data.tail(10)
-
             x = list(range(len(sample)))
             y = sample["Close"].astype(float).tolist()
             labels = sample["Date"].dt.strftime("%b %y").tolist()
@@ -115,7 +132,6 @@ def generate_stock_graph(ticker, graph_type="line"):
 
         elif graph_type == "pie":
             sample = data.tail(5)
-
             y = sample["Close"].astype(float).tolist()
             labels = [f"P{i}" for i in range(1, len(y)+1)]
 
@@ -129,7 +145,6 @@ def generate_stock_graph(ticker, graph_type="line"):
         buf.seek(0)
 
         image_base64 = base64.b64encode(buf.read()).decode("utf-8")
-
         plt.close()
 
         return {
@@ -139,6 +154,48 @@ def generate_stock_graph(ticker, graph_type="line"):
 
     except Exception as e:
         print("GRAPH ERROR:", e)
+        return {
+            "type": "text",
+            "data": "⚠️ Failed to generate graph"
+        }
+
+
+# -----------------------------
+# 🔹 GENERAL GRAPH (NEW 🔥)
+# -----------------------------
+def generate_general_graph(message, graph_type="line"):
+    try:
+        labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
+        values = [random.randint(5, 15) for _ in labels]
+
+        plt.figure(figsize=(8, 4))
+
+        if graph_type == "bar":
+            plt.bar(labels, values)
+
+        elif graph_type == "pie":
+            plt.pie(values, labels=labels, autopct="%1.1f%%")
+
+        else:
+            plt.plot(labels, values)
+
+        plt.title("Financial Trend")
+        plt.tight_layout()
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format="png")
+        buf.seek(0)
+
+        image_base64 = base64.b64encode(buf.read()).decode("utf-8")
+        plt.close()
+
+        return {
+            "type": "image",
+            "data": image_base64
+        }
+
+    except Exception as e:
+        print("GENERAL GRAPH ERROR:", e)
         return {
             "type": "text",
             "data": "⚠️ Failed to generate graph"
@@ -172,7 +229,7 @@ def generate_text(message, user_profile):
 
 
 # -----------------------------
-# 🔹 MAIN FUNCTION
+# 🔹 MAIN FUNCTION (FINAL 🔥)
 # -----------------------------
 def get_ai_response(message, user_profile=None):
     if user_profile is None:
@@ -182,10 +239,14 @@ def get_ai_response(message, user_profile=None):
         mode = detect_mode(message)
 
         if mode == "graph":
-            ticker = extract_stock_ticker(message)
             graph_type = detect_graph_type(message)
+            category = detect_graph_category(message)
 
-            return generate_stock_graph(ticker, graph_type)
+            if category == "stock":
+                ticker = extract_stock_ticker(message)
+                return generate_stock_graph(ticker, graph_type)
+            else:
+                return generate_general_graph(message, graph_type)
 
         return generate_text(message, user_profile)
 
